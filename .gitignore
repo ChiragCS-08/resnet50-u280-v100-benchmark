@@ -1,0 +1,5 @@
+__pycache__/
+*.log
+*.xclbin
+results_5000/
+.venv/

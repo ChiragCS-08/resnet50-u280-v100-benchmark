@@ -1,0 +1,14 @@
+{
+  "images": 100,
+  "top1_accuracy": 0.81,
+  "top5_accuracy": 0.95,
+  "weights": "torchvision ResNet50_Weights.IMAGENET1K_V1",
+  "precision": "FP32",
+  "batch": 1,
+  "seed": 0,
+  "wall_seconds_incl_preprocess": 3.183,
+  "torch": "2.14.1+cu126",
+  "cuda_runtime": "12.6",
+  "device": "Tesla V100-PCIE-32GB",
+  "python": "3.10.12"
+}
