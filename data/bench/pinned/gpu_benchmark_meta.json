@@ -1,0 +1,13 @@
+{
+  "device": "Tesla V100-PCIE-32GB",
+  "torch": "2.14.1+cu126",
+  "cuda_runtime": "12.6",
+  "precision": "FP32",
+  "host_memory": "pinned",
+  "seconds_per_run": 15.0,
+  "repeats": 3,
+  "warmup_iters": 50,
+  "idle_power_w": 36.567021276595746,
+  "power_source": "nvidia-smi power.draw, 100 ms interval",
+  "note": "each iteration synchronized; latency-bound single-request timing; random weights and inputs"
+}
