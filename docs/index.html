@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ResNet-50 on Alveo U280 vs NVIDIA V100: project site</title>
+<meta name="description" content="Cross-platform ResNet-50 inference benchmarking: Alveo U280 (Vitis AI DPU) vs NVIDIA V100. Project Update 1.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f6f7f4; --ink:#1c2420; --muted:#56635d; --rule:#d5dbd6;
+  --mask:#0e5a4a;        /* solder-mask green: links, done */
+  --gold:#a8790c;        /* in progress */
+  --stop:#a63d2f;        /* blocked */
+  --panel:#ecefe9; --code:#e4e9e2;
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#131a17; --ink:#e6ebe7; --muted:#9aa8a1; --rule:#2c3833;
+    --mask:#5cc3a6; --gold:#e0b24a; --stop:#e48a7c;
+    --panel:#1a2320; --code:#202b27;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131a17; --ink:#e6ebe7; --muted:#9aa8a1; --rule:#2c3833;
+  --mask:#5cc3a6; --gold:#e0b24a; --stop:#e48a7c;
+  --panel:#1a2320; --code:#202b27;
+}
+*{box-sizing:border-box}
+html{background:var(--paper);color:var(--ink);scroll-padding-top:1rem}
+body{margin:0;font-family:var(--serif);font-size:1.125rem;line-height:1.65;
+  padding:0 1.25rem 5rem}
+main{max-width:46rem;margin:0 auto}
+a{color:var(--mask);text-underline-offset:.2em}
+a:focus-visible,summary:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+h1{font-size:clamp(2rem,5vw,2.9rem);line-height:1.1;font-weight:600;margin:3.5rem 0 .75rem;letter-spacing:-.01em}
+h2{font-size:1.6rem;line-height:1.2;font-weight:600;margin:3.25rem 0 .75rem;
+  padding-top:1.25rem;border-top:1px solid var(--rule)}
+h3{font-size:1.15rem;margin:1.75rem 0 .4rem}
+p{margin:.7rem 0}
+.lede{font-size:1.3rem;color:var(--muted);margin-bottom:1.5rem}
+code,pre{font-family:var(--mono);font-size:.84rem}
+code{background:var(--code);padding:.1em .35em;border-radius:3px}
+pre{background:var(--code);padding:1rem 1.1rem;overflow-x:auto;border-radius:4px;line-height:1.55;margin:.9rem 0}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;font-size:1rem;margin:1rem 0}
+.scroll{overflow-x:auto}
+th,td{text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;border-bottom:2px solid var(--ink)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* The one memorable element: the layer ladder, since the work really is a sequence */
+.ladder{list-style:none;margin:1.5rem 0 0;padding:0;border-left:3px solid var(--rule)}
+.ladder li{position:relative;padding:.1rem 0 1.25rem 1.5rem}
+.ladder li::before{content:"";position:absolute;left:-.62rem;top:.55rem;width:1.05rem;height:1.05rem;
+  border-radius:50%;background:var(--paper);border:3px solid var(--rule)}
+.ladder li.done::before{background:var(--mask);border-color:var(--mask)}
+.ladder li.wip::before{border-color:var(--gold);background:linear-gradient(90deg,var(--gold) 50%,var(--paper) 50%)}
+.ladder li.blocked::before{border-color:var(--stop)}
+.ladder b{font-weight:600}
+.state{font-size:.95rem;color:var(--muted)}
+.done .state{color:var(--mask)} .wip .state{color:var(--gold)} .blocked .state{color:var(--stop)}
+
+.grade{background:var(--panel);border-left:4px solid var(--mask);padding:1rem 1.25rem;margin:1.75rem 0}
+.grade p{margin:.35rem 0}
+.todo{background:color-mix(in srgb,var(--gold) 22%,transparent);padding:.05em .3em;border-radius:3px;
+  font-family:var(--mono);font-size:.82em}
+details{border-top:1px solid var(--rule);padding:.6rem 0}
+details:last-of-type{border-bottom:1px solid var(--rule)}
+summary{cursor:pointer;font-weight:600}
+ol,ul{padding-left:1.4rem} li{margin:.3rem 0}
+.theme{position:fixed;top:.75rem;right:.75rem;font:inherit;font-size:.9rem;background:var(--panel);
+  color:var(--ink);border:1px solid var(--rule);border-radius:4px;padding:.3rem .65rem;cursor:pointer}
+nav.toc{font-size:1rem;margin:1.25rem 0}
+nav.toc a{margin-right:1.1rem;white-space:nowrap}
+footer{margin-top:4rem;color:var(--muted);font-size:.95rem}
+</style>
+</head>
+<body>
+<button class="theme" id="theme" type="button" aria-label="Toggle light or dark theme">Theme</button>
+<main>
+
+<h1>ResNet-50 on Alveo U280 vs NVIDIA V100</h1>
+<p class="lede">Does an FPGA-based deep-learning processor beat a GPU on throughput, latency and performance per watt for a real CNN, and what does INT8 quantization cost in accuracy?</p>
+<p>Chirag · Open Cloud Testbed (CloudLab) · Project Update 1</p>
+
+<div class="grade">
+  <p><strong>What to grade for Update 1</strong></p>
+  <p>Fork: <span class="todo">paste fork URL, named “project update 1”</span> (frozen after the deadline)</p>
+  <p>Working repository: <a href="https://github.com/ChiragCS-08/resnet50-u280-v100-benchmark">ChiragCS-08/resnet50-u280-v100-benchmark</a></p>
+  <p>Runnable part of this update: the FP32 GPU reference and its golden output (see <a href="#run">How to run</a>).</p>
+</div>
+
+<nav class="toc" aria-label="Page sections">
+  <a href="#status">Status</a><a href="#results">Results</a><a href="#files">Files</a><a href="#run">How to run</a><a href="#risks">Risks</a><a href="#plan">Plan</a><a href="#ai">AI use</a>
+</nav>
+
+<h2 id="project">The project in brief</h2>
+<p>Two accelerators in the Open Cloud Testbed run the same network, ResNet-50 (6.97 GOP per image, ImageNet, 224×224×3 input).</p>
+<ul>
+  <li><strong>FPGA:</strong> AMD Alveo U280 running AMD’s DPUCAHX8H deep-learning processor in INT8, programmed through the Vitis AI flow (Model Zoo, Quantizer, Compiler) and the VART host runtime.</li>
+  <li><strong>GPU:</strong> NVIDIA Tesla V100-PCIE-32GB running PyTorch in FP32. This is the accuracy and performance reference, with INT8 TensorRT as an optional extra.</li>
+</ul>
+<p>This is a measurement project, not a from-scratch RTL design. The DPU IP comes from AMD. The engineering work is getting it built and running on the OCT shell, checking correctness against an FP32 golden reference, and benchmarking fairly.</p>
+<p><strong>Full-project targets:</strong> Top-1/Top-5 on 5,000 ImageNet validation images with the INT8 path within 2% absolute of FP32; batch sizes 1 to 32; end-to-end and kernel-only latency; throughput; power from <code>xbutil</code> and <code>nvidia-smi</code>.</p>
+
+<h2 id="status">Where the work stands</h2>
+<p>Correctness comes before performance: no timing number counts until the accuracy check and profiler traces pass.</p>
+<ol class="ladder">
+  <li class="wip"><b>Layer 0: environment bring-up</b><br>
+    <span class="state">In progress.</span> V100 node and OCT build machine are working. The U280 run node has no Vitis AI runtime and no prebuilt DPU for the OCT shell. Details are in <a href="https://github.com/ChiragCS-08/resnet50-u280-v100-benchmark/blob/main/docs/environment.md">docs/environment.md</a>.</li>
+  <li class="wip"><b>Layer 1: single-image correctness pipeline</b><br>
+    <span class="state">GPU half done, FPGA half not started.</span> The FP32 reference on the V100 is finished and reproducible. The DPU build, quantization, compilation and VART host application are still to do.</li>
+  <li class="wip"><b>Layer 2: 5,000-image accuracy validation</b><br>
+    <span class="state">FP32 baseline done.</span> The INT8 FPGA comparison waits on Layer 1.</li>
+  <li><b>Layer 3: batch-size sweep with power</b><br>
+    <span class="state">Not started.</span></li>
+</ol>
+<p><strong>DPU build:</strong> <span class="todo">running / failed with … / finished: fill in and link the log</span></p>
+
+<h2 id="results">Results so far</h2>
+<div class="scroll">
+<table>
+  <thead><tr><th>Run</th><th class="num">Images</th><th class="num">Top-1</th><th class="num">Top-5</th></tr></thead>
+  <tbody>
+    <tr><td>FP32, V100, golden sample</td><td class="num">100</td><td class="num">81%</td><td class="num">95%</td></tr>
+    <tr><td>FP32, V100, baseline</td><td class="num">5,000</td><td class="num">75.02%</td><td class="num">92.92%</td></tr>
+  </tbody>
+</table>
+</div>
+<ul>
+  <li>Weights: torchvision <code>ResNet50_Weights.IMAGENET1K_V1</code>, batch 1, seed 0, PyTorch 2.14.1 with CUDA 12.6.</li>
+  <li>The published full-validation figure for these weights is about 76.1% Top-1 and 92.9% Top-5. The 5,000-image subset is within normal sampling noise of that, and the 100-image numbers are too small to mean much.</li>
+  <li>The run took 141.6 seconds including image decoding and preprocessing. That is not a throughput benchmark, which comes in Layer 3.</li>
+  <li>Reproducibility: two runs on the same image list produced byte-identical prediction files.</li>
+  <li><strong>Known limitation:</strong> the FPGA path uses the Vitis AI Model Zoo TensorFlow ResNet-50, which has different weights from the torchvision model. The accuracy comparison is therefore cross-framework.</li>
+</ul>
+
+<h2 id="files">Files</h2>
+<pre><code>README.md
+gpu_ref/
+  fp32_reference.py      FP32 ResNet-50 reference (GPU)
+  requirements-gpu.txt   pip freeze of the working GPU environment
+data/
+  image_list.txt         the 100 images used (fixed sample, seed 0)
+  labels_100.csv         ground-truth labels (filename,wnid)
+  fp32_predictions.csv   golden output: Top-1/Top-5 index and probability per image
+  fp32_summary.json      accuracy and software versions for the run
+docs/
+  index.html             this site
+  environment.md         nodes, versions, setup problems and fixes, DPU build notes
+fpga/
+  DPU build notes and the Makefile change for the OCT shell</code></pre>
+<p>ImageNet images are not in the repository. They are read from the shared OCT copy at <code>/proj/octfpga-PG0/validation</code>. <span class="todo">state how a grader gets access, or commit the 100 sample images</span></p>
+
+<h2 id="run">How to run</h2>
+<h3>GPU reference (V100 node)</h3>
+<ol>
+  <li>Create the environment. The cu126 wheel is required; the default PyTorch wheel has no V100 kernels.
+<pre><code>python3 -m venv ~/venv-gpu &amp;&amp; source ~/venv-gpu/bin/activate
+pip install --upgrade pip
+pip install torch==2.14.1 torchvision --index-url https://download.pytorch.org/whl/cu126</code></pre>
+  </li>
+  <li>Make a synsets file (1,000 sorted class ids) and a labels file (<code>filename,wnid</code>):
+<pre><code>LC_ALL=C ls /proj/octfpga-PG0/imagenet/val | sort &gt; synsets.txt
+find /proj/octfpga-PG0/imagenet/val \( -type f -o -type l \) -printf '%f,%h\n' | sed 's#,.*/#,#' &gt; labels.csv</code></pre>
+  </li>
+  <li>Reproduce the golden output and check it:
+<pre><code>python gpu_ref/fp32_reference.py --images /proj/octfpga-PG0/validation \
+    --labels labels.csv --synsets synsets.txt --list data/image_list.txt --out results_100
+diff results_100/fp32_predictions.csv data/fp32_predictions.csv &amp;&amp; echo IDENTICAL</code></pre>
+  </li>
+</ol>
+<p><strong>Expected:</strong> <code>IDENTICAL</code>, with Top-1 81% and Top-5 95% for the 100-image list. Use <code>--num 5000</code> instead of <code>--list</code> for the full baseline. The <code>diff</code> against the committed golden file is the test.</p>
+<h3>FPGA path</h3>
+<p>Not runnable yet. It needs the DPU <code>.xclbin</code> and the VART host application, both still in progress.</p>
+
+<h2 id="risks">Risks and blockers</h2>
+<details open><summary>No DPU binary for the OCT shell</summary>
+<p>AMD’s package targets the older shell <code>xilinx_u280_xdma_201920_3</code>. The OCT card uses <code>xilinx_u280_gen3x16_xdma_1_202211_1</code>, so the design must be rebuilt, and it may fail timing.</p></details>
+<details><summary>No Docker or VART on the run node</summary>
+<p>The runtime has to be built or provided, and the quantizer and compiler environment is still unresolved.</p></details>
+<details><summary>Cross-framework weights</summary>
+<p>See the limitation under Results. Both paths will use the same 5,000 images.</p></details>
+<details><summary>Power measurement differs by tool</summary>
+<p><code>xbutil</code> and <code>nvidia-smi</code> report differently. The sampling method will be documented and repeated runs averaged.</p></details>
+<p><span class="todo">add the scope note if the U280 vs VCK5000 change is confirmed</span></p>
+
+<h2 id="plan">Plan for the rest of the semester</h2>
+<ol>
+  <li>Finish the DPU build, or document why it cannot be done and agree a fallback with the instructor. <span class="todo">date</span></li>
+  <li>Get the Vitis AI runtime working on the U280 node and run AMD’s stock example. <span class="todo">date</span></li>
+  <li>Quantize and compile the Model Zoo ResNet-50 for the built DPU, then run the 100-image check against the golden output. <span class="todo">date</span></li>
+  <li>Layer 2: 5,000-image accuracy comparison and profiler-trace checks. <span class="todo">date</span></li>
+  <li>Layer 3: batch sweep 1 to 32 on both platforms with latency, throughput and power, with PCIe DMA overhead quantified separately. <span class="todo">date</span></li>
+  <li>Optional: INT8 TensorRT on the V100 for a quantized-to-quantized comparison.</li>
+  <li>Final write-up and comparison. <span class="todo">date</span></li>
+</ol>
+
+<h2 id="ai">Use of AI</h2>
+<p>Claude (Anthropic) was used throughout this update: to help structure the proposal, to troubleshoot cluster setup from command output I pasted (NVIDIA driver and nouveau conflict, the PyTorch CUDA wheel, the DPU build flow and shell mismatch), and to draft <code>fp32_reference.py</code>, <code>docs/environment.md</code>, the README and this site. Claude had no access to the nodes. <span class="todo">confirm: I ran every command myself, checked the results and edited the files before submitting</span> The project idea, platform choices and technical decisions are mine.</p>
+
+<footer>Updated for Project Update 1. Later updates will be added to this site, and each deadline’s graded submission is linked at the top.</footer>
+</main>
+<script>
+(function(){
+  var b=document.getElementById('theme'),r=document.documentElement;
+  try{var s=localStorage.getItem('theme');if(s)r.setAttribute('data-theme',s);}catch(e){}
+  b.addEventListener('click',function(){
+    var dark=r.getAttribute('data-theme')?r.getAttribute('data-theme')==='dark'
+      :matchMedia('(prefers-color-scheme: dark)').matches;
+    var n=dark?'light':'dark';r.setAttribute('data-theme',n);
+    try{localStorage.setItem('theme',n);}catch(e){}
+  });
+})();
+</script>
+</body>
+</html>
