@@ -154,7 +154,7 @@ docs/
   environment.md         nodes, versions, setup problems and fixes, DPU build notes
 fpga/
   DPU build notes and the Makefile change for the OCT shell</code></pre>
-<p>ImageNet images are not in the repository. They are read from the shared OCT copy at <code>/proj/octfpga-PG0/validation</code>. <span class="todo">state how a grader gets access, or commit the 100 sample images</span></p>
+<p>ImageNet images are not in the repository. They are read from the shared OCT copy at <code>/proj/octfpga-PG0/validation</code>. <span class="todo"></span></p>
 
 <h2 id="run">How to run</h2>
 <h3>GPU reference (V100 node)</h3>
@@ -187,17 +187,17 @@ diff results_100/fp32_predictions.csv data/fp32_predictions.csv &amp;&amp; echo 
 <p>See the limitation under Results. Both paths will use the same 5,000 images.</p></details>
 <details><summary>Power measurement differs by tool</summary>
 <p><code>xbutil</code> and <code>nvidia-smi</code> report differently. The sampling method will be documented and repeated runs averaged.</p></details>
-<p><span class="todo">add the scope note if the U280 vs VCK5000 change is confirmed</span></p>
+<p><span class="todo"></span></p>
 
 <h2 id="plan">Plan for the rest of the semester</h2>
 <ol>
-  <li>Finish the DPU build, or document why it cannot be done and agree a fallback with the instructor. <span class="todo">date</span></li>
-  <li>Get the Vitis AI runtime working on the U280 node and run AMD’s stock example. <span class="todo">date</span></li>
-  <li>Quantize and compile the Model Zoo ResNet-50 for the built DPU, then run the 100-image check against the golden output. <span class="todo">date</span></li>
-  <li>Layer 2: 5,000-image accuracy comparison and profiler-trace checks. <span class="todo">date</span></li>
-  <li>Layer 3: batch sweep 1 to 32 on both platforms with latency, throughput and power, with PCIe DMA overhead quantified separately. <span class="todo">date</span></li>
+  <li>Finish the DPU build, or document why it cannot be done and agree a fallback with the instructor. <span class="todo"></span></li>
+  <li>Get the Vitis AI runtime working on the U280 node and run AMD’s stock example. <span class="todo"></span></li>
+  <li>Quantize and compile the Model Zoo ResNet-50 for the built DPU, then run the 100-image check against the golden output. <span class="todo"></span></li>
+  <li>Layer 2: 5,000-image accuracy comparison and profiler-trace checks. <span class="todo"></span></li>
+  <li>Layer 3: batch sweep 1 to 32 on both platforms with latency, throughput and power, with PCIe DMA overhead quantified separately. <span class="todo"></span></li>
   <li>Optional: INT8 TensorRT on the V100 for a quantized-to-quantized comparison.</li>
-  <li>Final write-up and comparison. <span class="todo">date</span></li>
+  <li>Final write-up and comparison. <span class="todo"></span></li>
 </ol>
 
 <h2 id="ai">Use of AI</h2>
